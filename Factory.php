@@ -127,7 +127,7 @@ class Factory
                     continue;
                 }
 
-                $rowData[$column] = $row->{$column};//$row->{"get" . ucfirst($column)}();
+                $rowData[$column] = $row->{$column};
             }
 
             if(!$this->connection->insert($tableName, $rowData)) {

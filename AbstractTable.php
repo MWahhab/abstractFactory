@@ -47,12 +47,6 @@ class AbstractTable
     {
         foreach ($values as $property => $value) {
             $this->{$property} = $value;
-
-            if (!method_exists($this, 'get' . ucfirst($property))) {
-                $this->{'get' . ucfirst($property)} = function () use ($property) {
-                    return $this->{$property};
-                };
-            }
         }
     }
 
