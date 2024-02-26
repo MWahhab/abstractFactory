@@ -21,10 +21,6 @@ class AbstractTable
     {
         $this->tableName = $tableName;
         $this->columns   = $columns;
-
-        foreach ($columns as $column => $type) {
-            $this->{$column} = null;
-        }
     }
 
     /**
