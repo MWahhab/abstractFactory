@@ -2,7 +2,7 @@
 
 require_once ("database/config.php");
 
-if($argc < 3) {
+if(!isset($argv[1], $argv[2])) {
     echo "USAGE: PHP generateRows.php <table_name> </quantity>\n";
     exit();
 }
@@ -17,10 +17,8 @@ You can now:
 - Insert more rows
 - Clear entire tables or their records
 - Backup or merge the table
-- Or more - find out how by running php plsHelpMe.php\n\n";
+- Or more - find out how by running php help.php\n\n";
 }
-
-exit();
 
 //example use:
 //php .\generateRows.php beyblade 5
