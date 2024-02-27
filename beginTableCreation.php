@@ -2,14 +2,17 @@
 
 require_once ("database/config.php");
 
-if($argc < 3) {
+if(isset($argv[1], $argv[2])) {
     echo
     "USAGE: PHP beginTableCreation.php <table_name> '<[column_name => column_type, column_name2 => column_type2, ...]>'\n";
     echo "REMINDER: COLUMN_TYPE MUST BE EITHER:\n string \ninteger \nboolean \nfloat\nARRAY BRACKETS MUST BE WRAPPED IN ''\n";
+} else {
+    echo "No correct arguments found. Use help command to understand usage.";
+    exit();
 }
 
-$tableName    = "your_mom";//$argv[1];
-$columnsInput = "[breast_size => integer, foot_size => integer, is_naked => boolean, name => string]";//$argv[2];
+$tableName    = $argv[1];
+$columnsInput = $argv[2];
 
 $columnsString = substr($columnsInput, 1, -1);
 
@@ -32,6 +35,5 @@ if($factory->createTable($tableName, $columns)) {
 Run php .\plsHelpMe.pph for help on how to do so!\n\n";
 }
 
-exit();
 //example usage below:
 //php .\beginTableCreation.php beyblade "[name => string, owner => string, type => string]"

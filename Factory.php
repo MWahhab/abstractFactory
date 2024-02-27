@@ -66,8 +66,6 @@ class Factory
 
         $columnClauseStringified = implode(",", $columnClause);
 
-        $columnNames = implode(",", array_keys($columns));
-
         $query = "CREATE TABLE IF NOT EXISTS {$tableName}(
         id int AUTO_INCREMENT PRIMARY KEY,
         {$columnClauseStringified}
@@ -156,7 +154,7 @@ class Factory
 
         $this->refreshHighId($tableName);
 
-        $rows  = [];
+        $rows = [];
 
         for($i=0;$i<$quantity;$i++){
             $row    = $this->generateRow($tableName, $columnsWithTypes);
@@ -236,11 +234,14 @@ class Factory
                 $info = "{$detail} {$uniqueNum}";
                 break;
             case "boolean":
-                $info = rand(0,1) == 1 ? 0 : 1;
+                $info = rand(0,1);
                 break;
             case "float":
                 $randomNum = rand(0, 100)/100;
                 $info = $uniqueNum + (float) number_format($randomNum,2 );
+                break;
+            case "tinyint":
+                $info = (int) rand(0,1);
                 break;
             case "integer":
                 $info = (int)($uniqueNum + rand(1,1000));
@@ -291,11 +292,6 @@ class Factory
      */
     public function removeTable(string $table):bool
     {
-        if(!$this->checkTableExistence($table)) {
-            echo "\nThe table doesn't exist, so there's nothing to remove!\n\n";
-            return false;
-        }
-
         echo !$this->connection->dropTable($table) ? "\nFailed to drop table: {$table}!\n\n" : "\n{$table} table dropped successfully!\n\n";
 
         return true;

@@ -15,7 +15,7 @@ class AbstractTable
      * @param string $tableName Refers to the name of the table
      * @param array  $columns   Assoc array of the columns/type e.g: ["name" => "string", ...]
      *
-     * Sets the tablename and columns properties upon instantiation
+     * Sets the table name and columns properties upon instantiation
      */
     public function __construct(string $tableName, array $columns)
     {

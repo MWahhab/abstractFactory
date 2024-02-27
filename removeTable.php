@@ -2,7 +2,7 @@
 
 require_once ("database/config.php");
 
-if($argc < 2) {
+if(!isset($argv[1])) {
     echo "USAGE: php removeTable.php <table_name>";
     exit();
 }
@@ -10,12 +10,11 @@ if($argc < 2) {
 /**
  * @var Factory $factory
  */
-if($factory->removeTable($argv[1])) {
-    echo "\nYou can now:
+
+$factory->removeTable($argv[1]);
+
+echo "\nYou can now:
 - Create a new table
 - Clear more tables or their records
 - Backup or merge tables
-- Or more - find out how by running php plsHelpMe.php\n\n";
-}
-
-exit();
+- Or more - find out how by running php help.php\n\n";
