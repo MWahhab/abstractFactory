@@ -48,16 +48,16 @@ class Factory
         foreach ($columns as $columnName => $columnType) {
             switch ($columnType) {
                 case("string"):
-                    $columnClause[] = "{$columnName} VARCHAR(2000) NOT NULL UNIQUE";
+                    $columnClause[] = "{$columnName} VARCHAR(2000) NOT NULL";
                     break;
                 case("integer"):
-                    $columnClause[] = "{$columnName} INT NOT NULL UNIQUE";
+                    $columnClause[] = "{$columnName} INT NOT NULL";
                     break;
                 case("float"):
-                    $columnClause[] = "{$columnName} DOUBLE(10,2) NOT NULL UNIQUE";
+                    $columnClause[] = "{$columnName} DOUBLE(10,2) NOT NULL";
                     break;
                 case("boolean"):
-                    $columnClause[] = "{$columnName} BOOLEAN NOT NULL UNIQUE";
+                    $columnClause[] = "{$columnName} BOOLEAN NOT NULL";
                     break;
                 default:
                     echo "The datatype for {$columnName} was neither string, integer, float or boolean! Cannot create table\n";
@@ -177,7 +177,7 @@ class Factory
         $valuesToAssign = [];
 
         for($i=0;$i<count($columns);$i++) {
-            $valuesToAssign[$columns[$i]] = $this->generateRowInfo($columns[$i]);
+            $valuesToAssign[$columns[$i]] = $this->generateRowInfo($columns[$i], $columnsWithTypes[$columns[$i]]);
         }
 
         $this->setHighestId($this->getHighestId() + 1);
@@ -223,14 +223,33 @@ class Factory
     }
 
     /**
-     * @param  string $detail Refers to the beyblade detail being generated
-     * @return string         Generates a random string based on the detail passed in
+     * @param  string $detail   Refers to the beyblade detail being generated
+     * @param  string $dataType Refers to the data type of the detail
+     * @return string           Generates a random string based on the detail passed in
      */
-    private function generateRowInfo(string $detail): string
+    private function generateRowInfo(string $detail, string $dataType): mixed
     {
         $uniqueNum = $this->getHighestId() + 1;
 
-        return "{$detail} {$uniqueNum}";
+        switch ($dataType) {
+            case "string":
+                $info = "{$detail} {$uniqueNum}";
+                break;
+            case "boolean":
+                $info = rand(0,1) == 1 ? 0 : 1;
+                break;
+            case "float":
+                $randomNum = rand(0, 100)/100;
+                $info = $uniqueNum + (float) number_format($randomNum,2 );
+                break;
+            case "integer":
+                $info = (int)($uniqueNum + rand(1,1000));
+                break;
+            default:
+                $info = "Failed to generate row info properly";
+        }
+
+        return $info;
     }
 
     /**

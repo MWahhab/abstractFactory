@@ -8,8 +8,8 @@ if($argc < 3) {
     echo "REMINDER: COLUMN_TYPE MUST BE EITHER:\n string \ninteger \nboolean \nfloat\nARRAY BRACKETS MUST BE WRAPPED IN ''\n";
 }
 
-$tableName    = $argv[1];
-$columnsInput = $argv[2];
+$tableName    = "your_mom";//$argv[1];
+$columnsInput = "[breast_size => integer, foot_size => integer, is_naked => boolean, name => string]";//$argv[2];
 
 $columnsString = substr($columnsInput, 1, -1);
 
