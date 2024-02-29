@@ -87,6 +87,7 @@ class Factory
         $properties         = "";
         $setProperties      = "";
         $getters            = "";
+        $setters            = "";
         $params             = "";
 
         foreach ($columns as $column => $dataType) {
@@ -116,6 +117,12 @@ class Factory
             }
             ";
 
+            $setters       .= "public function set" .ucfirst($column) ."({$dataType} \${$column}): void
+            {
+                \$this->{$column} = \${$column};
+            }
+            ";
+
         }
 
         $classModel = "<?php" . " 
@@ -133,7 +140,8 @@ class Factory
             {
                 return \$this->columns;
             }
-            {$getters}     
+            {$getters}
+            {$setters}
 
         }
         ";
