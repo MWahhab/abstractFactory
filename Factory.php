@@ -77,6 +77,76 @@ class Factory
     }
 
     /**
+     * @param  string $tableName Refers to the table's name
+     * @param  array  $columns   Assoc Array referring to the columns and their type e.g: ["name" => "string"]
+     * @return void              Generates a model for the new table in the form of a class
+     */
+    public function generateModel(string $tableName, array $columns): void
+    {
+        $className          = str_replace(" ", "", ucwords($tableName));
+        $properties         = "";
+        $setProperties      = "";
+        $getters            = "";
+        $params             = "";
+
+        foreach ($columns as $column => $dataType) {
+            switch($dataType) {
+                case "string" || "float":
+                    $properties .= "private {$dataType} \${$column}; ";
+                    break;
+                case "integer":
+                    $properties .= "private int \$column; ";
+                    break;
+                case "boolean":
+                    $properties .= "private bool \$column; ";
+                    break;
+                default:
+                    die("Failed to add all properties to model");
+            }
+
+            $setProperties .= "\$this->{$column} = \${$column}; ";
+            $params        .= "\${$column},";
+
+            $dataType = $dataType == "integer" ? "int" : $dataType;
+            $dataType = $dataType == "boolean" ? "bool" : $dataType;
+
+            $getters       .= "public function get" .ucfirst($column) ."(): {$dataType}
+            {
+                return \$this->{$column};
+            }
+            ";
+
+        }
+
+        $classModel = "<?php" . " 
+            class " . $className . "{
+            private array \$columns;
+            {$properties}
+    
+            public function __construct({$params})
+            {
+                 \$this->columns = " . var_export($columns, true) . ";
+                 {$setProperties}
+            }
+           
+            public function getColumns(): array
+            {
+                return \$this->columns;
+            }
+            {$getters}     
+
+        }
+        ";
+
+        $newClassPath = "C:\\xampp\htdocs\abstractFactory\\{$className}.php";
+
+        file_put_contents(
+            $newClassPath,
+            $classModel
+        );
+    }
+
+    /**
      * @param  string $tableName Refers to the name of the table being created
      * @param  array  $columns   Refers to the columns of the table being created
      * @return bool
@@ -100,6 +170,8 @@ class Factory
 
         $this->inputTable($tableName, $columns);
 
+        $this->generateModel($tableName, $columns);
+
         $rowToInsert = $this->generateRow($tableName, $columns);
         $this->insertRows($tableName, [$rowToInsert]);
 
@@ -113,8 +185,10 @@ class Factory
      */
     private function insertRows(string $tableName, array $rows):bool
     {
+        $className = ucwords($tableName);
+
         /**
-         * @var AbstractTable $row
+         * @var $className $row
          */
         foreach ($rows as $row) {
             $columns = array_keys($row->getColumns());
@@ -125,7 +199,7 @@ class Factory
                     continue;
                 }
 
-                $rowData[$column] = $row->{$column};
+                $rowData[$column] = $row->{"get" . ucWords($column)}();
             }
 
             if(!$this->connection->insert($tableName, $rowData)) {
@@ -167,10 +241,10 @@ class Factory
     /**
      * @param  string        $tableName        Refers to the table a row is being generated for
      * @param  array         $columnsWithTypes Refers to the columns in the table and their data types
-     * @return AbstractTable                   Generates a row for the table
      */
-    private function generateRow(string $tableName, array $columnsWithTypes): AbstractTable
+    private function generateRow(string $tableName, array $columnsWithTypes)
     {
+        $className      = ucwords($tableName);
         $columns        = array_keys($columnsWithTypes);
         $valuesToAssign = [];
 
@@ -180,8 +254,9 @@ class Factory
 
         $this->setHighestId($this->getHighestId() + 1);
 
-        $row = new AbstractTable($tableName, $columnsWithTypes);
-        $row->assignValues($valuesToAssign);
+        require_once ("C:\\xampp\htdocs\abstractFactory\\{$className}.php");
+
+        $row = new $className(...$valuesToAssign);
 
         return $row;
     }
