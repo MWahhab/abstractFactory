@@ -23,6 +23,11 @@ $columns = [];
 foreach ($columnPairs as $pair) {
     $parts = explode('=>', $pair);
     $columnName = trim($parts[0]);
+
+    if(!$columnName) {
+        continue;
+    }
+
     $columnType = trim($parts[1]);
     $columns[$columnName] = $columnType;
 }

@@ -3,7 +3,7 @@
 require_once ("database/config.php");
 
 if(!isset($argv[1])) {
-    echo "USAGE: php removeTable.php <table_name>";
+    echo "USAGE: php removeTable.php '<table_name>'";
     exit();
 }
 

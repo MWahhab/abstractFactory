@@ -27,8 +27,10 @@ class Factory
      * @param  string $tableName Refers to the table's name
      * @return bool              Runs a query to check whether a table exists or not.
      */
-    private function checkTableExistence(string $tableName): bool
+    public function checkTableExistence(string $tableName): bool
     {
+        $tableName = str_replace(" ", "_", $tableName);
+
         if(empty($this->connection->select($tableName))) {
             return false;
         }
@@ -44,6 +46,7 @@ class Factory
     private function inputTable(string $tableName, array $columns): void
     {
         $columnClause = [];
+        $tableName    = str_replace(" ", "_", strtolower($tableName));
 
         foreach ($columns as $columnName => $columnType) {
             switch ($columnType) {
@@ -91,25 +94,12 @@ class Factory
         $params             = "";
 
         foreach ($columns as $column => $dataType) {
-            switch($dataType) {
-                case "string" || "float":
-                    $properties .= "private {$dataType} \${$column}; ";
-                    break;
-                case "integer":
-                    $properties .= "private int \$column; ";
-                    break;
-                case "boolean":
-                    $properties .= "private bool \$column; ";
-                    break;
-                default:
-                    die("Failed to add all properties to model");
-            }
-
-            $setProperties .= "\$this->{$column} = \${$column}; ";
-            $params        .= "\${$column},";
-
             $dataType = $dataType == "integer" ? "int" : $dataType;
             $dataType = $dataType == "boolean" ? "bool" : $dataType;
+
+            $properties    .= "private {$dataType} \${$column}; ";
+            $setProperties .= "\$this->{$column} = \${$column}; ";
+            $params        .= "\${$column},";
 
             $getters       .= "public function get" .ucfirst($column) ."(): {$dataType}
             {
@@ -188,12 +178,13 @@ class Factory
 
     /**
      * @param  string $tableName Refers to the able that's having rows inserted into it
-     * @param  array  $rows      Array of instantiated AbstractTable(s)
+     * @param  array  $rows      Array of instantiated row(s)
      * @return bool              Inserts rows into a table in the database
      */
-    private function insertRows(string $tableName, array $rows):bool
+    public function insertRows(string $tableName, array $rows):bool
     {
-        $className = ucwords($tableName);
+        $className = str_replace(" ", "", ucwords($tableName));
+        $tableName = str_replace(" ", "_", strtolower($tableName));
 
         /**
          * @var $className $row
@@ -206,8 +197,13 @@ class Factory
                 if($column == "id") {
                     continue;
                 }
+                $data = $row->{"get" . str_replace(" ", "", ucwords($column))}();
 
-                $rowData[$column] = $row->{"get" . ucWords($column)}();
+                if(is_bool($data)) {
+                    $data = !$data ? 0 : 1;
+                }
+
+                $rowData[$column] = $data;
             }
 
             if(!$this->connection->insert($tableName, $rowData)) {
@@ -227,6 +223,9 @@ class Factory
      */
     public function generateRows(string $tableName, int $quantity): bool
     {
+        $className = str_replace(" ", "", ucwords($tableName));
+        $tableName = str_replace(" ", "_", strtolower($tableName));
+
         if(!$this->checkTableExistence($tableName)) {
             echo "{$tableName} table doesnt exist! Cannot create row(s)! Go create the table first!\n";
             return false;
@@ -239,7 +238,7 @@ class Factory
         $rows = [];
 
         for($i=0;$i<$quantity;$i++){
-            $row    = $this->generateRow($tableName, $columnsWithTypes);
+            $row    = $this->generateRow($className, $columnsWithTypes);
             $rows[] = $row;
         }
 
@@ -252,11 +251,15 @@ class Factory
      */
     private function generateRow(string $tableName, array $columnsWithTypes)
     {
-        $className      = ucwords($tableName);
+        $className      = str_replace(" ", "", ucwords($tableName));
         $columns        = array_keys($columnsWithTypes);
         $valuesToAssign = [];
 
         for($i=0;$i<count($columns);$i++) {
+            if($columns[$i] == "id") {
+                continue;
+            }
+
             $valuesToAssign[$columns[$i]] = $this->generateRowInfo($columns[$i], $columnsWithTypes[$columns[$i]]);
         }
 
@@ -274,6 +277,8 @@ class Factory
      */
     private function refreshHighId(string $tableName): void
     {
+        $tableName = str_replace(" ", "_" , strtolower($tableName));
+
         $stmnt = $this->connection->getConnection()->prepare("SELECT MAX(id) AS highest_id FROM {$tableName}");
         $result = $stmnt->execute();
 
@@ -339,34 +344,53 @@ class Factory
     /**
      * @param  string $table      Refers to the table being backed up
      * @param  string $backupName Refers to the name of the backup table being made
-     * @return bool               Backs up a table by creating a new one
+     * @return void               Backs up a table by creating a new one
      */
-    public function backupTable(string $table, string $backupName): bool
+    public function backupTable(string $table, string $backupName): void
     {
-        if($this->connection->backup($table, $backupName)) {
-            return true;
+        $dbTable    = str_replace(" ", "_", $table);
+        $backupName = str_replace(" ", "_", $backupName);
+
+        $columns      = $this->connection->getColumnNamesWithMappedTypes($dbTable);
+        $classColumns = "[";
+
+        foreach ($columns as $column => $dataType) {
+            if($column == "id") {
+                continue;
+            }
+
+            $columns[$column] = $dataType == "tinyint" ? "boolean" : $dataType;
+
+            $classColumns .= "{$column} => {$columns[$column]}, ";
         }
 
-        return false;
-    }
+        $classColumns .= "]";
 
-    /**
-     * @param  string $table      Refers to the table being backed up
-     * @param  string $backupName Refers to the name of the backup table being made
-     * @return bool               Merges backup table with existing table
-     */
-    public function mergeBackup(string $table, string $backupName): bool
-    {
-        if(!$this->checkTableExistence($backupName)){
-            echo "{$backupName} table doesnt exist! Cannot back it up!\n";
-            return false;
+        $currentTable = $this->connection->select($dbTable);
+        $rowsInTable  = "";
+
+        foreach ($currentTable as $row) {
+            unset($row["id"]);
+
+            $rowsInTable .= '$argv[2] = "[' . implode(",", $row) .
+                ']"; include("C:\\\xampp\htdocs\abstractFactory\inputSingleRow.php"); ';
         }
 
-        if($this->connection->mergeTables($backupName, $table)) {
-            return true;
-        }
+        $backupMigration = "<?php" . "
 
-        return false;
+        \$argv[1] = '{$table}';
+
+        include_once ('C:\\xampp\htdocs\abstractFactory\\removeTable.php');
+
+        // id is automated
+        \$argv[2] = '{$classColumns}';
+
+        include_once ('C:\\xampp\htdocs\abstractFactory\beginTableCreation.php');
+
+        {$rowsInTable}";
+
+        file_put_contents("C:\\xampp\htdocs\abstractFactory\migrations\\{$backupName}_migration_dist.php",
+            $backupMigration);
     }
 
     /**
@@ -375,9 +399,19 @@ class Factory
      */
     public function removeTable(string $table):bool
     {
+        $className = str_replace(" ", "", ucwords($table));
+        $table     = str_replace(" ", "_", strtolower($table));
+
         echo !$this->connection->dropTable($table) ? "\nFailed to drop table: {$table}!\n\n" : "\n{$table} table dropped successfully!\n\n";
 
-        return true;
+        $class = "C:\\xampp\htdocs\abstractFactory\\{$className}.php";
+
+        if(!file_exists($class)) {
+            echo "File for table class doesnt exist!";
+            return false;
+        }
+
+        return unlink($class);
     }
 
     /**
@@ -386,6 +420,8 @@ class Factory
      */
     public function clearRecords(string $table): bool
     {
+        $table      = str_replace(" ", "_", $table);
+
         return $this->connection->truncateTable($table);
     }
 }
